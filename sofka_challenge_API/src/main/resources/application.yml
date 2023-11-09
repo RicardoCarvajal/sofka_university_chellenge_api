@@ -1,0 +1,23 @@
+spring:
+   data:
+      mongodb:
+         host: localhost
+         port: 27017
+         database: sofka
+         username: ${USERMONGO}
+         password: ${PASSMONGO}
+         authentication-database: admin 
+         
+logging:
+   pattern:
+      dateformat: yyyy-MM-dd'T'HH:mm:ss
+      file: "[%-5level] [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c{1} - %msg%n"
+      console: "[%-5level] [%d{yyyy-MM-dd HH:mm:ss.SSS}] %c{1} - %msg%n"
+   logback:
+      rollingpolicy:
+         file-name-pattern: app.log.%d{yyyy-MM-dd}.%i.gz
+         max-file-size: 10MB
+   file:
+      name: "logs/app.log"
+   level:
+     org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG         
