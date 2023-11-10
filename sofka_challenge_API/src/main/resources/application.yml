@@ -20,4 +20,7 @@ logging:
    file:
       name: "logs/app.log"
    level:
-     org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG         
+     org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG 
+     
+     
+        

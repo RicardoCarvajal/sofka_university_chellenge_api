@@ -7,7 +7,8 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,12 +20,9 @@ import lombok.Setter;
 public class SortCriteriaDateParam {
 
 	@NotNull
-	@NotBlank
-	private String sortBy;
-
-	@NotNull
-	@NotBlank
-	private String sortDirection;
+	@Max(10)
+	@Min(1)
+	private Integer elements;
 
 	@NotNull
 	@DateTimeFormat(iso = ISO.DATE, pattern = "yyyy-MM-dd")

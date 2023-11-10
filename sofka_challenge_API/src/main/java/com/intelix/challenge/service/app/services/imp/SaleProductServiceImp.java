@@ -3,6 +3,8 @@ package com.intelix.challenge.service.app.services.imp;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -36,11 +38,12 @@ public class SaleProductServiceImp implements SaleProductService {
 	}
 
 	@Override
-	public Flux<SaleProduct> generateReportByDate(String direction, String sortBy, Date date1, Date date2) {
+	public Flux<SaleProduct> generateReportByDate(Integer elements, Date date1, Date date2) {
 
-		Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+		Sort sort = Sort.by(Sort.Direction.fromString("DESC"), "quantity");
+		Pageable pageable = PageRequest.of(0, elements, sort);
 
-		return this.seleRepository.getReportByDate(date1, date2, sort);
+		return this.seleRepository.getReportByDate(date1, date2, pageable);
 	}
 
 }

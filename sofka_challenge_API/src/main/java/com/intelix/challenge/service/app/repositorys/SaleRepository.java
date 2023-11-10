@@ -20,7 +20,7 @@ public interface SaleRepository extends ReactiveMongoRepository<Sale, String> {
 			"{'$unwind': { 'path': '$items' }}", "{ '$project': { 'items.name': 1, 'items.quantity': 1, _id: 0 } }",
 			"{'$group': {'_id': {name: '$items.name'}, 'count': {'$sum': '$items.quantity'}}}",
 			"{'$project': {_id: 0, productName: '$_id.name', quantity: '$count'}}" })
-	Flux<SaleProduct> getReportByDate(Date date1, Date date2, Sort sort);
+	Flux<SaleProduct> getReportByDate(Date date1, Date date2, Pageable pageable);
 
 	@Aggregation(pipeline = { "{'$unwind': { 'path': '$items' }}",
 			"{ '$project': { 'items.name': 1, 'items.quantity': 1, _id: 0 } }",

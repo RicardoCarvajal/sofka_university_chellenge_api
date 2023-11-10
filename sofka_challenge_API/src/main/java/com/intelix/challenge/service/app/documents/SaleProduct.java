@@ -3,6 +3,8 @@ package com.intelix.challenge.service.app.documents;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +20,7 @@ import lombok.Setter;
 public class SaleProduct {
 
 	@Id
+	@JsonIgnore
 	private String _id;
 	private String productName;
 	private int quantity;

@@ -19,8 +19,11 @@ import com.intelix.challenge.service.app.services.SaleProductService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,9 +44,12 @@ public class SaleProductsController {
 
 	@GetMapping("/products")
 	@Operation(summary = "Obtener productos", description = "Permite solicitar el reporte de todos los productos con sus unidades vendidas")
-	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "")), description = "Ok", responseCode = "200")
+	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\"Status\":\"OK\",\"Products\":[{\"productName\":\"printer paper\",\"quantity\":9},{\"productName\":\"pens\",\"quantity\":28},{\"productName\":\"notepad\",\"quantity\":35},{\"productName\":\"laptop\",\"quantity\":11},{\"productName\":\"envelopes\",\"quantity\":30},{\"productName\":\"binder\",\"quantity\":37},{\"productName\":\"backpack\",\"quantity\":11}],\"Message\":\"Lista de productos\",\"Size\":7,\"Timestamp\":\"2023-11-10T21:42:25.909+00:00\"}")), description = "En el caso de ser satisfactoria la respuesta devuelve una respuesta con 5 parametros principales: \n1. El objeto solicitado \n2. El estatus de la respuesta \n3. Un mensaje \n4. La cantidad de objetos devueltos \n5. La fecha", responseCode = "200")
+	@Parameters({
+			@Parameter(in = ParameterIn.QUERY, description = "Campo por el cual se ordena la consulta", name = "sortBy", schema = @Schema(type = "string", example = "_id"), required = true),
+			@Parameter(in = ParameterIn.QUERY, description = "Dirección de ordenamiento", name = "sortDirection", schema = @Schema(type = "string", example = "DESC"), required = true) })
 	public Mono<ResponseEntity<Map<String, Object>>> getProduct(
-			@Parameter(description = "Criterios de busqueda") @Valid Mono<SortCriteria> sortCriteriaMono) {
+			@Parameter(hidden = true) @Valid Mono<SortCriteria> sortCriteriaMono) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 
@@ -87,16 +93,21 @@ public class SaleProductsController {
 	@Operation(summary = "Top de productos por fecha", description = "Permite generar una lista variable de los productos más vendidos. (podría solicitarse el producto más vendido o máximo los 10 productos más vendidos en un periodo de tiempo definido:\n"
 			+ "a. Para estos debes aceptar cuantos productos quieres en el ranking\n"
 			+ "b. La fecha de inicio de las ventas y la fecha de finalización de las ventas")
-	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "")), description = "Ok", responseCode = "200")
+	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\"Status\":\"OK\",\"Products\":[{\"productName\":\"envelopes\",\"quantity\":23},{\"productName\":\"binder\",\"quantity\":22},{\"productName\":\"notepad\",\"quantity\":21},{\"productName\":\"pens\",\"quantity\":18},{\"productName\":\"backpack\",\"quantity\":6},{\"productName\":\"printer paper\",\"quantity\":6},{\"productName\":\"laptop\",\"quantity\":4}],\"Message\":\"Lista de productos\",\"Size\":7,\"Timestamp\":\"2023-11-10T21:34:36.166+00:00\"}")), description = "En el caso de ser satisfactoria la respuesta devuelve una respuesta con 5 parametros principales: \n1. El objeto solicitado \n2. El estatus de la respuesta \n3. Un mensaje \n4. La cantidad de objetos devueltos \n5. La fecha", responseCode = "200")
+	@Parameters({
+			@Parameter(in = ParameterIn.QUERY, description = "Cantidad de elementos de la consulta", name = "elements", schema = @Schema(type = "integer", format = "int32", example = "10"), required = true),
+			@Parameter(in = ParameterIn.QUERY, description = "Fecha de inicio de la consulta", name = "date1", schema = @Schema(type = "date", example = "2015-01-01"), required = true),
+			@Parameter(in = ParameterIn.QUERY, description = "Fecha de fin de la consulta", name = "date2", schema = @Schema(type = "date", example = "2016-01-01"), required = true) })
 	public Mono<ResponseEntity<Map<String, Object>>> getProductByDate(
-			@Parameter(description = "Criterios de busqueda") @Valid Mono<SortCriteriaDateParam> sortCriteriaMono) {
+			@Parameter(hidden = true) @Valid Mono<SortCriteriaDateParam> sortCriteriaMono) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
 
 		return sortCriteriaMono.flatMap(sortParam -> {
 
-			return this.saleProductService.generateReportByDate(sortParam.getSortDirection(), sortParam.getSortBy(),
-					sortParam.getDate1(), sortParam.getDate2()).collectList().map(listProduct -> {
+			return this.saleProductService
+					.generateReportByDate(sortParam.getElements(), sortParam.getDate1(), sortParam.getDate2())
+					.collectList().map(listProduct -> {
 
 						response.put("Products", listProduct);
 						response.put("Size", listProduct.size());

@@ -10,6 +10,6 @@ public interface SaleProductService {
 
 	public Flux<SaleProduct> generateReport(String direction, String sortBy);
 
-	public Flux<SaleProduct> generateReportByDate(String direction, String sortBy, Date date1, Date date2);
+	public Flux<SaleProduct> generateReportByDate(Integer elements, Date date1, Date date2);
 
 }
