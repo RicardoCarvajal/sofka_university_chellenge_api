@@ -1,7 +1,7 @@
 ![Intelix](https://i.imgur.com/VD7nJDi.png)
 
 # Practica para capacitacion de Sofka
-### Aplicación de consola
+### API REST
 
  ![Static Badge](https://img.shields.io/badge/0.0.1-version-%2300bab4) ![Static Badge](https://img.shields.io/badge/0.0.1-release-%2300bab4)
 
