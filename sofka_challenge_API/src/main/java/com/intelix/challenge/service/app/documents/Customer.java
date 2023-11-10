@@ -1,5 +1,8 @@
 package com.intelix.challenge.service.app.documents;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,9 +12,16 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Customer {
 
-	private char gender;
-	private int age;
+	@NotBlank
+	private String gender;
+
+	@NotNull
+	private Integer age;
+
+	@NotEmpty
 	private String email;
-	private int satisfaction;
+
+	@NotNull
+	private Integer satisfaction;
 
 }

@@ -1,7 +1,5 @@
 package com.intelix.challenge.service.app.services.imp;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,21 +36,11 @@ public class SaleProductServiceImp implements SaleProductService {
 	}
 
 	@Override
-	public Flux<SaleProduct> generateReportByDate(String direction, String sortBy, String date1, String date2) {
+	public Flux<SaleProduct> generateReportByDate(String direction, String sortBy, Date date1, Date date2) {
 
 		Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
 
-		SimpleDateFormat formatDate = new SimpleDateFormat("yyyy-MM-dd");
-		Date init = null;
-		Date fin = null;
-		try {
-			init = formatDate.parse(date1);
-			fin = formatDate.parse(date2);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-
-		return this.seleRepository.getReportByDate(init, fin);
+		return this.seleRepository.getReportByDate(date1, date2, sort);
 	}
 
 }

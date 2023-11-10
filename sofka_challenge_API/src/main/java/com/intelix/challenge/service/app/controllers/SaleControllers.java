@@ -2,18 +2,22 @@ package com.intelix.challenge.service.app.controllers;
 
 import java.net.URI;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.support.WebExchangeBindException;
 
+import com.intelix.challenge.service.app.criteria.RequesteCriteria;
+import com.intelix.challenge.service.app.criteria.SortPageCriteria;
 import com.intelix.challenge.service.app.documents.Sale;
 import com.intelix.challenge.service.app.services.SaleService;
 
@@ -23,6 +27,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -41,44 +48,134 @@ public class SaleControllers {
 	@GetMapping
 	@Operation(summary = "Obtener facturas", description = "Permite solicitar todas las facturas que hay almacenadas de forma paginada")
 	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "")), description = "Ok", responseCode = "200")
-	public Mono<ResponseEntity<Flux<Sale>>> getAvailable(
-			@Parameter(description = "Número de página") @RequestParam(defaultValue = "0") int page,
-			@Parameter(description = "Número de elementos de la página") @RequestParam(defaultValue = "10") int elements,
-			@Parameter(description = "Campo por el cual se puede ordenar") @RequestParam(defaultValue = "_id") String sortBy,
-			@Parameter(description = "Tipo de ordenamiento") @RequestParam(defaultValue = "ASC") String sortDirection) {
+	public Mono<ResponseEntity<Map<String, Object>>> getAvailable(
+			@Parameter(description = "Criterios de busqueda") @Valid Mono<SortPageCriteria> sortPageCriteria) {
 
-		return Mono
-				.just(ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-						.body(this.saleService.getHundredDocuments(page, elements, sortBy, sortDirection)))
-				.defaultIfEmpty(ResponseEntity.notFound().build());
+		Map<String, Object> response = new HashMap<String, Object>();
+
+		return sortPageCriteria.flatMap(sortPage -> {
+
+			return this.saleService.getHundredDocuments(sortPage.getPage(), sortPage.getElements(),
+					sortPage.getSortBy(), sortPage.getSortDirection()).collectList().map(listSale -> {
+
+						response.put("Sales", listSale);
+						response.put("Size", listSale.size());
+						response.put("Message", "Lista de facturas encontrada");
+						response.put("Timestamp", new Date());
+						if (!listSale.isEmpty()) {
+							response.put("Status", HttpStatus.OK);
+							return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(response);
+						}
+
+						response.put("Status", HttpStatus.NOT_FOUND);
+						return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+					});
+
+		}).onErrorResume(t -> {
+			return Mono.just(t).cast(WebExchangeBindException.class).flatMap(e -> Mono.just(e.getFieldErrors()))
+					.flatMapMany(Flux::fromIterable)
+					.map(fieldError -> "El campo " + fieldError.getField() + " " + fieldError.getDefaultMessage())
+					.collectList().flatMap(list -> {
+
+						response.put("Errors", list);
+						response.put("Message", "Ups!!! ha ocurrido un error 🥺​");
+						response.put("Timestamp", new Date());
+						response.put("Status", HttpStatus.BAD_REQUEST);
+
+						return Mono.just(ResponseEntity.badRequest().body(response));
+					});
+		});
 
 	}
 
-	@GetMapping("/{id}")
+	@GetMapping("/sale")
 	@Operation(summary = "Obtener factura", description = "Permite solicitar una factura por su id")
 	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "")), description = "Ok", responseCode = "200")
-	public Mono<ResponseEntity<Sale>> getSale(@Parameter(description = "Id de la factura") @PathVariable String id) {
-		if (id != null && !id.isEmpty()) {
-			return this.saleService.getSale(id)
-					.map(s -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(s))
-					.defaultIfEmpty(ResponseEntity.notFound().build());
-		}
-		return Mono.just(ResponseEntity.badRequest().build());
+	public Mono<ResponseEntity<Map<String, Object>>> getSale(
+			@Parameter(description = "Id de la factura") @NotNull @NotBlank @Valid Mono<RequesteCriteria> id) {
+
+		Map<String, Object> response = new HashMap<String, Object>();
+
+		return id.flatMap(numberId -> {
+
+			response.put("Message", "Respuesta en blanco");
+			response.put("Timestamp", new Date());
+			response.put("Status", HttpStatus.NOT_FOUND);
+
+			return this.saleService.getSale(numberId.getId()).map(sale -> {
+				response.clear();
+				response.put("Sales", sale);
+				response.put("Message", "Factura encontrada");
+				response.put("Timestamp", new Date());
+				response.put("Status", HttpStatus.OK);
+				return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(response);
+			}).defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).body(response));
+
+		}).onErrorResume(t -> {
+			return Mono.just(t).cast(WebExchangeBindException.class).flatMap(e -> Mono.just(e.getFieldErrors()))
+					.flatMapMany(Flux::fromIterable)
+					.map(fieldError -> "El campo " + fieldError.getField() + " " + fieldError.getDefaultMessage())
+					.collectList().flatMap(list -> {
+
+						response.put("Errors", list);
+						response.put("Message", "Ups!!! ha ocurrido un error 🥺​");
+						response.put("Timestamp", new Date());
+						response.put("Status", HttpStatus.BAD_REQUEST);
+
+						return Mono.just(ResponseEntity.badRequest().body(response));
+					});
+		});
 
 	}
 
 	@PostMapping
 	@Operation(summary = "Generar factura", description = "Permite registrar una factura")
-	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\"_id\":\"65491e565c49ee027d514f0f\",\"saleDate\":\"2023-11-06T17:11:50.159+00:00\",\"products\":[{\"name\":\"printer paper\",\"tags\":[\"office\",\"stationary\"],\"price\":40.01,\"quantity\":2},{\"name\":\"notepad\",\"tags\":[\"office\",\"writing\",\"school\"],\"price\":35.29,\"quantity\":2},{\"name\":\"pens\",\"tags\":[\"writing\",\"office\",\"school\",\"stationary\"],\"price\":56.12,\"quantity\":5},{\"name\":\"backpack\",\"tags\":[\"school\",\"travel\",\"kids\"],\"price\":77.71,\"quantity\":2},{\"name\":\"notepad\",\"tags\":[\"office\",\"writing\",\"school\"],\"price\":18.47,\"quantity\":2},{\"name\":\"envelopes\",\"tags\":[\"stationary\",\"office\",\"general\"],\"price\":19.95,\"quantity\":8},{\"name\":\"envelopes\",\"tags\":[\"stationary\",\"office\",\"general\"],\"price\":8.08,\"quantity\":3},{\"name\":\"binder\",\"tags\":[\"school\",\"general\",\"organization\"],\"price\":14.16,\"quantity\":3}],\"storeLocation\":\"Denver\",\"customer\":{\"gender\":\"M\",\"age\":42,\"email\":\"cauho@witwuta.sv\",\"satisfaction\":4},\"couponUsed\":true,\"purchaseMethod\":\"Online\",\"total\":849.88}")), description = "Created", responseCode = "201")
-	public Mono<ResponseEntity<Sale>> registerInvoice(
-			@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "Factura", content = @Content(examples = @ExampleObject(value = "{\"products\":[{\"name\":\"binder\",\"tags\":[\"school\",\"general\",\"organization\"],\"price\":14.16,\"quantity\":3}],\"storeLocation\":\"Denver\",\"customer\":{\"gender\":\"M\",\"age\":42,\"email\":\"cauho@witwuta.sv\",\"satisfaction\":4},\"couponUsed\":true,\"purchaseMethod\":\"Online\",\"total\":42.48}"))) @RequestBody Sale sale) {
-		if (sale.get_id() == null) {
-			sale.setSaleDate(new Date());
-			return this.saleService.registerInvoice(sale)
-					.map(s -> ResponseEntity.created(URI.create("/api/sale/".concat(s.get_id())))
-							.contentType(MediaType.APPLICATION_JSON).body(s));
-		}
-		return Mono.just(ResponseEntity.badRequest().build());
+	@ApiResponse(content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "")), description = "Created", responseCode = "201")
+	public Mono<ResponseEntity<Map<String, Object>>> registerInvoice(
+			@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "Factura", content = @Content(examples = @ExampleObject(value = ""))) @Valid @RequestBody Mono<Sale> monoSale) {
+
+		Map<String, Object> response = new HashMap<String, Object>();
+
+		return monoSale.flatMap(sale -> {
+
+			if (sale.get_id() == null) {
+
+				sale.setSaleDate(new Date());
+
+				return this.saleService.registerInvoice(sale).map(s -> {
+
+					response.put("Sales", s);
+					response.put("Message", "Se creo la factura con éxito");
+					response.put("Timestamp", new Date());
+					response.put("Status", HttpStatus.CREATED);
+
+					return ResponseEntity.created(URI.create("/api/sale/".concat(s.get_id())))
+							.contentType(MediaType.APPLICATION_JSON).body(response);
+				});
+
+			}
+
+			response.put("Errors", "El body no debe tener ID");
+			response.put("Message", "Ups!!! ha ocurrido un error 🥺​");
+			response.put("Timestamp", new Date());
+			response.put("Status", HttpStatus.BAD_REQUEST);
+
+			return Mono.just(ResponseEntity.badRequest().body(response));
+
+		}).onErrorResume(t -> {
+			return Mono.just(t).cast(WebExchangeBindException.class).flatMap(e -> Mono.just(e.getFieldErrors()))
+					.flatMapMany(Flux::fromIterable)
+					.map(fieldError -> "El campo " + fieldError.getField() + " " + fieldError.getDefaultMessage())
+					.collectList().flatMap(list -> {
+
+						response.put("Errors", list);
+						response.put("Message", "Ups!!! ha ocurrido un error 🥺​");
+						response.put("Timestamp", new Date());
+						response.put("Status", HttpStatus.BAD_REQUEST);
+
+						return Mono.just(ResponseEntity.badRequest().body(response));
+					});
+		});
 
 	}
 
