@@ -56,7 +56,7 @@ public class SaleControllers {
 			@Parameter(in = ParameterIn.QUERY, description = "Cantidad de elementos de la consulta", name = "elements", schema = @Schema(type = "integer", format = "int32", example = "10"), required = true),
 			@Parameter(in = ParameterIn.QUERY, description = "Campo por el cual se ordena la consulta", name = "sortBy", schema = @Schema(type = "string", example = "_id"), required = true),
 			@Parameter(in = ParameterIn.QUERY, description = "Dirección de ordenamiento", name = "sortDirection", schema = @Schema(type = "string", example = "DESC"), required = true) })
-	public Mono<ResponseEntity<Map<String, Object>>> getAvailable(
+	public Mono<ResponseEntity<Map<String, Object>>> getSales(
 			@Parameter(hidden = true) @Valid Mono<SortPageCriteria> sortPageCriteria) {
 
 		Map<String, Object> response = new HashMap<String, Object>();
@@ -115,7 +115,7 @@ public class SaleControllers {
 
 			return this.saleService.getSale(numberId.getId()).map(sale -> {
 				response.clear();
-				response.put("Sales", sale);
+				response.put("Sale", sale);
 				response.put("Message", "Factura encontrada");
 				response.put("Timestamp", new Date());
 				response.put("Status", HttpStatus.OK);
@@ -155,7 +155,7 @@ public class SaleControllers {
 
 				return this.saleService.registerInvoice(sale).map(s -> {
 
-					response.put("Sales", s);
+					response.put("Sale", s);
 					response.put("Message", "Se creo la factura con éxito");
 					response.put("Timestamp", new Date());
 					response.put("Status", HttpStatus.CREATED);
