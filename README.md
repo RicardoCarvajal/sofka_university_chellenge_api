@@ -1,5 +1,3 @@
-![Intelix](https://i.imgur.com/VD7nJDi.png)
-
 # Practica para capacitacion de Sofka
 ### API REST
 
